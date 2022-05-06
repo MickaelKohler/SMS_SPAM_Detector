@@ -101,7 +101,8 @@ def model_compiler(model, optimizer='adam', loss='binary_crossentropy'):
 
 nlp = spacy.load('en_core_web_sm')
 
-model_tfw = tf.keras.models.load_model('/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/models/model_tensorflow')
+model_twA = tf.keras.models.load_model('/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/models/model_A')
+model_twB = tf.keras.models.load_model('/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/models/model_B')
 
 SMS = "/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/data/SMS_collection.csv"
 LEMMA = '/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/data/lemma _data.csv'
@@ -192,7 +193,7 @@ if section == 'Accueil':
             )
 
     space(2)
-    st.header('Premières distinctions entre HAM et SPAM')
+    st.header('Distinction visuelle entre HAM et SPAM')
 
     col1, col2 = st.columns([1, 2])
     with col1:
@@ -327,40 +328,51 @@ if section == 'Les modèles en action':
             select_model = st.selectbox(
                 'Selection de la librairie : ',
                 ['Sci-kit Learn', 'Tensorflow'])
-            select_skl = None
             if select_model == 'Sci-kit Learn':
-                select_skl = st.selectbox(
+                select_sub_model = st.selectbox(
                     'Selection du type de modèle : ',
                     ['Perceptron', 'Multilayer Perceptron', 'SGD Classifier'])
+            if select_model == 'Tensorflow':
+                select_sub_model = st.selectbox(
+                    'Selection du type de modèle : ',
+                    ['Model A', 'Model B'])
 
             submit = st.button('Soumettre')
 
         if submit:
             c_txt = clean_sms(txt)
 
-            if select_model == 'Tensorflow':
+            if select_sub_model == 'Model A':
                 vector_txt = vectorize_text(c_txt)
-                pred_txt = binary_traduction(model_tfw(vector_txt))
+                pred_txt = binary_traduction(model_twA(vector_txt))
                 result = pred_txt[0]
-                predictions = binary_traduction(model_tfw(vectorize_text(test_text)).numpy())
-                eval_histo = model_tfw.evaluate(vectorize_text(test_text), test_label, verbose=2)
+                predictions = binary_traduction(model_twA(vectorize_text(test_text)).numpy())
+                eval_histo = model_twA.evaluate(vectorize_text(test_text), test_label, verbose=2)
                 score = eval_histo[1]
 
-            if select_skl == 'Perceptron':
+#            if select_sub_model == 'Model B':
+#                vector_txt = vectorize_text(c_txt)
+#                pred_txt = binary_traduction(model_twB(vector_txt))
+#                result = pred_txt[0]
+#                predictions = binary_traduction(model_twB(vectorize_text(test_text)).numpy())
+#                eval_histo = model_twB.evaluate(vectorize_text(test_text), test_label, verbose=2)
+#                score = eval_histo[1]         
+
+            if select_sub_model == 'Perceptron':
                 ppn = Perceptron(random_state=44).fit(train_text_cv, train_label)
                 score = ppn.score(test_text_cv, test_label)
                 c_txt_cv = vec.transform([c_txt])
                 result = ppn.predict(c_txt_cv)
                 predictions = ppn.predict(test_text_cv)
 
-            if select_skl == 'Multilayer Perceptron':
+            if select_sub_model == 'Multilayer Perceptron':
                 mlp = MLPClassifier(random_state=44, hidden_layer_sizes=(25,), solver='lbfgs').fit(train_text_cv, train_label)
                 score = mlp.score(test_text_cv, test_label)
                 c_txt_cv = vec.transform([c_txt])
                 result = mlp.predict(c_txt_cv)
                 predictions = mlp.predict(test_text_cv)
 
-            if select_skl == 'SGD Classifier':
+            if select_sub_model == 'SGD Classifier':
                 text_clf = Pipeline([
                     ('count_vec', CountVectorizer()), 
                     ('tfidf_transformer', TfidfTransformer()),
@@ -414,8 +426,8 @@ if section == 'Les modèles en action':
         predictions_sgd = text_clf.predict(test_text)
         cm_sgd = tf.math.confusion_matrix(test_label, predictions_sgd, 2)
 
-        score_tfw = model_tfw.evaluate(vectorize_text(test_text), test_label, verbose=2)[1]
-        predictions_tfw = binary_traduction(model_tfw(vectorize_text(test_text)).numpy())
+        score_tfw = model_twA.evaluate(vectorize_text(test_text), test_label, verbose=2)[1]
+        predictions_tfw = binary_traduction(model_twA(vectorize_text(test_text)).numpy())
         cm_tfw = tf.math.confusion_matrix(test_label, predictions_tfw, 2)
 
         st.subheader('Score sur le dataset de test :')
@@ -449,6 +461,32 @@ if section == 'Les modèles en action':
 
         st.subheader("Vitesse d'execution :")
 
+        col1, col2 = st.columns(2)
+        with col1:
+            fig = go.Figure(go.Bar(
+                x=[33, 4300, 126000, 255],
+                y=['Perceptron', 'SKLearn MLP', 'Tensorflow', 'SGD Classifier'],
+                orientation='h',
+                text=[188, 1100, 9600, 137],
+                textposition='auto'))
+            fig.update_layout(margin=dict(l=30, r=10, b=30, t=30), height=350)
+            fig.update_yaxes(autorange="reversed", side='left')
+            fig.update_xaxes(title="Temps d'entrainement en millisecondes")
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col2:
+            fig = go.Figure(go.Bar(
+                x=[13, 69, 433, 81],
+                y=['Perceptron', 'SKLearn MLP', 'Tensorflow', 'SGD Classifier'],
+                orientation='h',
+                text=[13, 69, 433, 81],
+                textposition='auto'))
+            fig.update_layout(margin=dict(l=10, r=30, b=30, t=30), height=350)
+            fig.update_yaxes(autorange="reversed", side='right')
+            fig.update_xaxes(autorange="reversed",
+                                title="Temps de prediction en millisecondes")
+            st.plotly_chart(fig, use_container_width=True)
+
     if sub_section == 'Les dessous des modèles':
         
         st.header("Le code derrière la magie")
@@ -470,7 +508,7 @@ MLPClassifier(
         if model_to_show == 'Tensorflow':
             code = '''         
 model = tf.keras.Sequential([
-    tf.keras.layers.Embedding(max_features + 1, embedding_dim),
+    tf.keras.layers.Embedding(max_features + 1, 16),
     tf.keras.layers.Dense(32, activation='relu'), 
     tf.keras.layers.GlobalAveragePooling1D(),
     tf.keras.layers.Dense(64, activation='relu'), 
@@ -492,11 +530,6 @@ Pipeline([('count_vec', CountVectorizer()),
             '''
 
         st.code(code, language='python')
-
-# Récap descriptif des models :
-    # temps d'execution (training)
-    # temps d'exe pour 1 prediction
-    # calcul temps d'exe rapport à la précision
 
 st.sidebar.title(' ')
 st.sidebar.info('Code source disponible dans le [Depôt de données](https://github.com/MickaelKohler/SMS_SPAM_Detector) Github')
