@@ -13,9 +13,9 @@ Developpement de modèles de Deep Learning pour pouvoir classifier des SMS en __
 ## Origine du projet
 
 La **WebApp** crée se divise en 3 sections : 
-- Une exploration de l'évolution de l'épidémie jsuqu'au 10/04/2021
-- Une comparaison de deux modèles de prédictions des contamnisations par statsmodels (ARIMA) et PROPHET
-- Automatisation d'un modèle de prédiction des cas futures à partir du 10/04/2021
+- Une Interface graphique pour paramétrer facilement un réseau de neurones (Scikitlearn ou Tensorflow)
+- La selection de 4 modèles préentrainés ou préconfigurés avec leurs performances respectives sur le dataset de test. 
+- Un module permettant à l'utilisateur de rentrer un text en anglais et le classifier comme SPAM ou HAM.
 
 ## Interface
 
