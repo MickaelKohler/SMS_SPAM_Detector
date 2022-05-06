@@ -140,7 +140,7 @@ test_label_ds = tf.expand_dims(np.asarray(test_label), -1)
 thematiques = [
     "Accueil",
     "Faites votre modèle",
-    "Classer un SMS"
+    "Les modèles en action"
     ]
 
 st.sidebar.title('SMS Tracker')
@@ -228,7 +228,7 @@ if section == 'Faites votre modèle':
     space(1)
     st.header('Selectionnez vos Paramètres')
 
-    with st.form(key='my_form')  :
+    with st.form(key='my_form'):
         if algo == 'Sci-Kit Learn MLP':
             col1, col2 = st.columns(2)
             with col1:
@@ -236,30 +236,40 @@ if section == 'Faites votre modèle':
                     "Selection du Solver",
                     ('adam', 'lbfgs', 'sgd'))
             with col2:   
-                neur = st.number_input(
+                neur = st.slider(
                     'hidden layer size', 
                     min_value=1,
                     max_value=100, value=25, step=1)
         if algo == 'TensorFlow':
-            st.write('Paramètrage du réseau de neurone')
+            st.markdown('**Paramètrage du réseau de neurone**')
             col1, col2 = st.columns(2)
             with col1:
-                nb_layers = st.number_input(
+                nb_layers = st.slider(
                     'Nombre de Layers',
                     min_value=1,
                     max_value=10, 
                     value=2, step=1)
+                batch_stat = st.checkbox('Activer la Batch Normalisation')
+                batch = True if batch_stat else False
             with col2:  
-                nb_neuro = st.number_input(
+                nb_neuro = st.slider(
                     'Nombre de neurones dans les Layers',
-                    min_value=1,
+                    min_value=0,
                     max_value=128, 
-                    value=16, step=1) 
-                neur = st.radio(
-                    'Activer la Batch Normalisation',
-                    ['True', 'False'])
-            st.write('Paramétrage du Compiler')
-
+                    value=32, step=8)
+            space(1)
+            st.markdown('**Paramétrage du Compiler**')
+            col1, col2 = st.columns(2)
+            with col1:
+                nb_epochs = st.number_input(
+                    "Nombre d'epochs",
+                    min_value=2,
+                    max_value=100, 
+                    value=10, step=1)
+            with col2:  
+                optimiser = st.radio(
+                    "Type d'optimizer",
+                    ['adam', 'SGD', 'RMSprop'])
         submitted = st.form_submit_button(label='Submit')
       
     if submitted:
@@ -273,28 +283,24 @@ if section == 'Faites votre modèle':
         elif algo == 'TensorFlow':
             with st.spinner('Entrainement du modèle'):
                 m = tf.keras.Sequential()
-                model = make_model(m, hidden_range=3, neural_size=68, batch=True)
-                model_compiler(model, optimizer='adam', loss='binary_crossentropy')
-                model.fit(test_text_ds, test_label_ds, epochs=10, verbose=False)
+                model = make_model(m, hidden_range=nb_layers, neural_size=nb_neuro, batch=batch)
+                model_compiler(model, optimizer=optimiser, loss='binary_crossentropy')
+                model.fit(test_text_ds, test_label_ds, epochs=nb_epochs, verbose=False)
                 score = model.evaluate(test_text_ds, test_label_ds, verbose=2)[1]
                 predictions = binary_traduction(model(test_text_ds).numpy())
                 cm = tf.math.confusion_matrix(test_label, predictions, 2)
 
+        space(1)
+        col1, col2, col3 = st.columns([2, 1, 2])
+        with col1:
+            st.header('Score du Modèle')
+            st.metric('Score sur le dataset de test', round(score, 4))
+        with col3:
+            fig = ff.create_annotated_heatmap(cm.numpy()[::-1], x=['HAM', 'SPAM'], y=['SPAM', 'HAM'], colorscale='Viridis')
+            fig.update_layout(margin=dict(l=10, r=30, b=50, t=10), width=200, height=300)
+            st.plotly_chart(fig, use_container_width=True)
 
-        st.write("model score:")                                      
-        st.write(score)
-        st.write(predictions)
-
-
-
-
-        fig = ff.create_annotated_heatmap(cm.numpy()[::-1], x=['HAM', 'SPAM'], y=['SPAM', 'HAM'], colorscale='Viridis')
-        fig.update_layout(margin=dict(l=10, r=30, b=50, t=10), width=600, height=200)
-        st.plotly_chart(fig, use_container_width=True)
-
-
-
-if section == 'Classer un SMS':
+if section == 'Les modèles en action':
 
     st.title("Classification des SMS")
 
@@ -302,34 +308,33 @@ if section == 'Classer un SMS':
         'Selection de la sous-section :',
         ['Testez les modèles',
          'Pésentation des 4 Fantastiques', 
+         'Les dessous des modèles',
         ])
     st.sidebar.title(' ')
 
     if sub_section == 'Testez les modèles':
         
-        st.header("HAM vs SPAM")
-        st.markdown(
-            '''
-            Dans ce module, vous pouvez écrire un message __en anglais__ et vérifier si ce message est considéré 
-            comme un SPAM ou non en fonction de l'algorithme choisi. 
-            '''
-        )
-
-        col1, col2 = st.columns([3, 1])
+        col1, col2, col3 = st.columns([3, 1, 3])
         with col1:
+            st.header("HAM vs SPAM")
+            st.markdown(
+                '''
+                Dans ce module, vous pouvez écrire un message __en anglais__ et vérifier si ce message est considéré 
+                comme un SPAM ou non en fonction de l'algorithme choisi. 
+                '''
+            )
             txt = st.text_area('SMS à analyser',"Ecrivez votre texte", height=120)
-            submit = st.button('Soumettre')
-        with col2:
-            select_model = st.radio(
+            select_model = st.selectbox(
                 'Selection de la librairie : ',
                 ['Sci-kit Learn', 'Tensorflow'])
             select_skl = None
             if select_model == 'Sci-kit Learn':
-                select_skl = st.radio(
+                select_skl = st.selectbox(
                     'Selection du type de modèle : ',
                     ['Perceptron', 'Multilayer Perceptron', 'SGD Classifier'])
 
-        st.markdown('---')
+            submit = st.button('Soumettre')
+
         if submit:
             c_txt = clean_sms(txt)
 
@@ -370,22 +375,15 @@ if section == 'Classer un SMS':
             fig['data'][0]['showscale'] = True
 
             result_txt = 'SPAM' if result == 1 else 'HAM'
-            st.header(f'Selon le modèle {select_model}, le message est un {result_txt}')
-            space(1)
-            col1, col2 = st.columns(2)
-            with col1:
-                if result == 1:
-                    space(1)
+
+            with col3:
+                if result_txt == 'SPAM':
+                    st.header("Attention, c'est un SPAM !")
+                    space(3)
                     st.image('/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/resources/spam.jpg', width=400)
-                if result == 0:
+                if result_txt == 'HAM':
+                    st.header(f"Cool, c'est un HAM !")
                     st.image('/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/resources/ham.jpg', width=300)
-            with col2:
-                st.subheader('Confiance du modèle')
-                st.metric(
-                    'Score sur le train set : ',
-                    round(score, 4)
-                    )
-                st.plotly_chart(fig, use_container_width=True)
         
     if sub_section == 'Pésentation des 4 Fantastiques':
         
@@ -451,23 +449,54 @@ if section == 'Classer un SMS':
 
         st.subheader("Vitesse d'execution :")
 
+    if sub_section == 'Les dessous des modèles':
+        
+        st.header("Le code derrière la magie")
+        model_to_show = st.selectbox(
+            'Selectionnez un modèle pré-entrainé pour voir comme il a été construit.',
+            ('Perceptron', 'Multilayer Perceptron', 'Tensorflow', 'SGD Classifier'))
+        if model_to_show == 'Perceptron':
+            code = '''         
+Perceptron(random_state=44)
+            '''
+        if model_to_show == 'Multilayer Perceptron':
+            code = '''         
+MLPClassifier(
+    random_state=44,
+    hidden_layer_sizes=(25,), 
+    solver='lbfgs'
+)
+            '''
+        if model_to_show == 'Tensorflow':
+            code = '''         
+model = tf.keras.Sequential([
+    tf.keras.layers.Embedding(max_features + 1, embedding_dim),
+    tf.keras.layers.Dense(32, activation='relu'), 
+    tf.keras.layers.GlobalAveragePooling1D(),
+    tf.keras.layers.Dense(64, activation='relu'), 
+    tf.keras.layers.Dropout(0.3),
+    tf.keras.layers.Dense(1, activation="sigmoid")
+            ])
 
+model.compile(
+    optimizer='adam',
+    loss=tf.losses.BinaryCrossentropy(from_logits=False),
+    metrics=['accuracy'],
+)
+            '''
+        if model_to_show == 'SGD Classifier':
+            code = '''         
+Pipeline([('count_vec', CountVectorizer()), 
+          ('tfidf_transformer', TfidfTransformer()),
+          ('clf', SGDClassifier( n_jobs=-1))])
+            '''
 
-
-
-
-    space(1)
-
-# execution du model, 
-    # juste un blox de text, 
-    # dessous, la selection du model,
-    # A coté l'image
+        st.code(code, language='python')
 
 # Récap descriptif des models :
     # temps d'execution (training)
     # temps d'exe pour 1 prediction
     # calcul temps d'exe rapport à la précision
-    # score sur le test
 
 st.sidebar.title(' ')
 st.sidebar.info('Code source disponible dans le [Depôt de données](https://github.com/MickaelKohler/SMS_SPAM_Detector) Github')
