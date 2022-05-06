@@ -52,7 +52,7 @@ st.markdown("""
 def load_data(url):
     '''Importe la donnée et la met en cache'''
     df = pd.read_csv(url, index_col=0)
-    df.fillna('', inplace=True)
+    df.fillna(' ', inplace=True)
     return df
 
 
@@ -86,6 +86,17 @@ def vectorize_text(text):
   return vectorize_layer(text)
 
 
+def make_model(model,hidden_range=1,neural_size=2,activation='relu',batch=True):
+    for _ in range(hidden_range):
+        model.add(tf.keras.layers.Dense(neural_size, activation=activation))
+        if batch == True :
+            model.add(tf.keras.layers.BatchNormalization())
+    model.add(tf.keras.layers.Dense(1, activation="sigmoid"))
+    return model
+
+def model_compiler(model, optimizer='adam', loss='binary_crossentropy'):
+   return model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
+
 # DATA
 
 nlp = spacy.load('en_core_web_sm')
@@ -118,6 +129,11 @@ vec = CountVectorizer().fit(train_text)
 train_text_cv = vec.transform(train_text)
 test_text_cv = vec.transform(test_text)
 
+train_text_ds = vectorize_text(train_text)
+test_text_ds = vectorize_text(test_text)
+
+train_label_ds = tf.expand_dims(np.asarray(train_label), -1)
+test_label_ds = tf.expand_dims(np.asarray(test_label), -1)
 
 # SIDE BAR
 
@@ -133,7 +149,6 @@ st.sidebar.title(' ')
 section = st.sidebar.radio(
     'Selection de la partie : ',
     thematiques)
-st.sidebar.title(' ')
 
 
 # MAIN PAGE
@@ -205,11 +220,79 @@ if section == 'Accueil':
 
 if section == 'Faites votre modèle':
 
-    data_study = data.copy()
+    algo = st.sidebar.radio(
+        "Algorithm:",
+        ('Sci-Kit Learn MLP', 'TensorFlow'))
 
-    st.title("Faites votre modèle")
-    st.header("Plongez dans la pronfondeur de l'IA")
+    st.title('Un Algorithme de Deep Learning sur mesure')
     space(1)
+    st.header('Selectionnez vos Paramètres')
+
+    with st.form(key='my_form')  :
+        if algo == 'Sci-Kit Learn MLP':
+            col1, col2 = st.columns(2)
+            with col1:
+                solver = st.selectbox(
+                    "Selection du Solver",
+                    ('adam', 'lbfgs', 'sgd'))
+            with col2:   
+                neur = st.number_input(
+                    'hidden layer size', 
+                    min_value=1,
+                    max_value=100, value=25, step=1)
+        if algo == 'TensorFlow':
+            st.write('Paramètrage du réseau de neurone')
+            col1, col2 = st.columns(2)
+            with col1:
+                nb_layers = st.number_input(
+                    'Nombre de Layers',
+                    min_value=1,
+                    max_value=10, 
+                    value=2, step=1)
+            with col2:  
+                nb_neuro = st.number_input(
+                    'Nombre de neurones dans les Layers',
+                    min_value=1,
+                    max_value=128, 
+                    value=16, step=1) 
+                neur = st.radio(
+                    'Activer la Batch Normalisation',
+                    ['True', 'False'])
+            st.write('Paramétrage du Compiler')
+
+        submitted = st.form_submit_button(label='Submit')
+      
+    if submitted:
+        if algo == 'Sci-Kit Learn MLP':
+            with st.spinner('Entrainement du modèle'):
+                model = MLPClassifier(random_state=44, hidden_layer_sizes=(neur,), solver=solver).fit(train_text_cv, train_label)
+                predictions = model.predict(test_text_cv)
+                score = model.score(test_text_cv, test_label)
+                cm = tf.math.confusion_matrix(test_label, predictions, 2)
+        
+        elif algo == 'TensorFlow':
+            with st.spinner('Entrainement du modèle'):
+                m = tf.keras.Sequential()
+                model = make_model(m, hidden_range=3, neural_size=68, batch=True)
+                model_compiler(model, optimizer='adam', loss='binary_crossentropy')
+                model.fit(test_text_ds, test_label_ds, epochs=10, verbose=False)
+                score = model.evaluate(test_text_ds, test_label_ds, verbose=2)[1]
+                predictions = binary_traduction(model(test_text_ds).numpy())
+                cm = tf.math.confusion_matrix(test_label, predictions, 2)
+
+
+        st.write("model score:")                                      
+        st.write(score)
+        st.write(predictions)
+
+
+
+
+        fig = ff.create_annotated_heatmap(cm.numpy()[::-1], x=['HAM', 'SPAM'], y=['SPAM', 'HAM'], colorscale='Viridis')
+        fig.update_layout(margin=dict(l=10, r=30, b=50, t=10), width=600, height=200)
+        st.plotly_chart(fig, use_container_width=True)
+
+
 
 if section == 'Classer un SMS':
 
@@ -319,7 +402,6 @@ if section == 'Classer un SMS':
         score_ppn = ppn.score(test_text_cv, test_label)
         predictions_ppn = ppn.predict(test_text_cv)
         cm_ppn = tf.math.confusion_matrix(test_label, predictions_ppn, 2)
-
 
         mlp = MLPClassifier(random_state=44, hidden_layer_sizes=(25,), solver='lbfgs').fit(train_text_cv, train_label)
         score_mlp = mlp.score(test_text_cv, test_label)
