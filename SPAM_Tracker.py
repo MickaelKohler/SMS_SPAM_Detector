@@ -101,12 +101,12 @@ def model_compiler(model, optimizer='adam', loss='binary_crossentropy'):
 
 nlp = spacy.load('en_core_web_sm')
 
-model_twA = tf.keras.models.load_model('/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/models/model_A')
-model_twB = tf.keras.models.load_model('/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/models/model_B')
+model_twA = tf.keras.models.load_model('./models/model_A')
+model_twB = tf.keras.models.load_model('./models/model_B')
 
-SMS = "/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/data/SMS_collection.csv"
-LEMMA = '/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/data/lemma _data.csv'
-LABEL = '/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/data/label.csv'
+SMS = './data/SMS_collection.csv'
+LEMMA = './data/lemma _data.csv'
+LABEL = './data/label.csv'
 sms_data = load_data(SMS)
 lemma_data = load_data(LEMMA)
 label_data = load_data(LABEL)
