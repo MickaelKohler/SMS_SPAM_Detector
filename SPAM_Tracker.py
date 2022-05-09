@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
+import en_core_web_sm
 import spacy
 import tensorflow as tf
 import plotly.express as px
@@ -98,7 +99,7 @@ def model_compiler(model, optimizer='adam', loss='binary_crossentropy'):
 
 # DATA
 
-nlp = spacy.load('en_core_web_sm')
+nlp = en_core_web_sm.load()
 
 model_twA = tf.keras.models.load_model('./models/model_A')
 model_twB = tf.keras.models.load_model('./models/model_B')
