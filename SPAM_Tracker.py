@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 import spacy
-import pickle
+from spacy_streamlit import load_model
 import tensorflow as tf
 import plotly.express as px
 import plotly.graph_objects as go
@@ -99,7 +99,7 @@ def model_compiler(model, optimizer='adam', loss='binary_crossentropy'):
 
 # DATA
 
-nlp = spacy.load('en_core_web_sm')
+nlp = load_model('en_core_web_sm')
 
 model_twA = tf.keras.models.load_model('./models/model_A')
 model_twB = tf.keras.models.load_model('./models/model_B')
