@@ -24,6 +24,9 @@ Ces analyses ont été mise à disposition au travers d’une __WebApp__ créée
 Pour lancer l'application : 
 ```streamlit run SPAM_Tracker.py```
 
+Site disponible à l'adresse suivante : 
+https://share.streamlit.io/mickaelkohler/sms_spam_detector/main/SPAM_Tracker.py
+
 ## Technologies 
 
 Projet fait entièrement en **Python**
