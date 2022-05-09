@@ -99,7 +99,7 @@ def model_compiler(model, optimizer='adam', loss='binary_crossentropy'):
 
 # DATA
 
-nlp = en_core_web_sm.load()
+nlp = spacy.load('en_core_web_sm')
 
 model_twA = tf.keras.models.load_model('./models/model_A')
 model_twB = tf.keras.models.load_model('./models/model_B')
