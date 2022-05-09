@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import streamlit as st
-import en_core_web_sm
 import spacy
 import tensorflow as tf
 import plotly.express as px
