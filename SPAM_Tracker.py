@@ -391,10 +391,10 @@ if section == 'Les modèles en action':
                 if result_txt == 'SPAM':
                     st.header("Attention, c'est un SPAM !")
                     space(3)
-                    st.image('/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/resources/spam.jpg', width=400)
+                    st.image('./resources/spam.jpg', width=400)
                 if result_txt == 'HAM':
                     st.header(f"Cool, c'est un HAM !")
-                    st.image('/Users/miko/Documents/Dev/Github/SMS_SPAM_Detector/resources/ham.jpg', width=300)
+                    st.image('./resources/ham.jpg', width=300)
         
     if sub_section == 'Pésentation des 4 Fantastiques':
         
